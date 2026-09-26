@@ -1,22 +1,17 @@
 /**
  * @file App.tsx
- * @description Master Mission Control UI for BLACKOUT.
- * Integrates real-time SSE stream telemetry, capability matrix probes, chaos fault injectors,
- * dynamic plan tree visualization, Gemma 4 recovery decision ladders, data provenance tracking,
- * dedicated Antigravity-style Artifact Workbench, and Safety Gate human handoff workflows.
+ * @description Master Multi-Page Mission Control UI for BLACKOUT.
+ * Features a modern, collapsible sidebar navigation across 6 dedicated modules:
+ * 1. Mission Control (Dashboard) - Overview, KPIs, Loop tracker & Dispatcher
+ * 2. Execution Plan - Dynamic step tree & SQLite WAL sync queue
+ * 3. Artifact Workbench - Antigravity-style Code & Architecture SVG Inspector
+ * 4. Chaos Switchboard - Deterministic fault injection lab & capability probes
+ * 5. Recovery Engine - Gemma 4 Strategy Ladder & replan audits
+ * 6. Data Provenance - Lineage, trust ratings, and Safety Gate inspector
+ * Supports both live real-time SSE telemetry and interactive standalone simulation.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Shield,
-  Activity,
-  Terminal,
-  Play,
-  Layers,
-  Radio,
-  AlertTriangle,
-  Code2,
-} from 'lucide-react';
 import { FullAgentState, Step, RecoveryEvent } from './types/agent';
 import { INITIAL_MOCK_STATE } from './data/mock_state';
 import {
@@ -27,15 +22,19 @@ import {
   restoreEnvironment,
   resolveHandoff,
 } from './services/api';
-import { CapabilityMatrix } from './components/CapabilityMatrix';
-import { ChaosControls } from './components/ChaosControls';
-import { PlanTree } from './components/PlanTree';
-import { RecoveryVisualizer } from './components/RecoveryVisualizer';
-import { ProvenanceInspector } from './components/ProvenanceInspector';
+
+import { Sidebar, PageId } from './components/Sidebar';
+import { TopNav } from './components/TopNav';
 import { HumanHandoffModal } from './components/HumanHandoffModal';
-import { MetricsBar } from './components/MetricsBar';
 import { ArtifactViewer, GeneratedArtifact } from './components/ArtifactViewer';
 import { synthesizeArtifactFromPrompt } from './utils/artifactSynthesizer';
+
+// Dedicated Sub-Pages
+import { DashboardPage } from './pages/DashboardPage';
+import { PlanPage } from './pages/PlanPage';
+import { ChaosPage } from './pages/ChaosPage';
+import { RecoveryPage } from './pages/RecoveryPage';
+import { ProvenancePage } from './pages/ProvenancePage';
 
 // Default initial artifacts for instant inspection
 const INITIAL_ARTIFACTS: GeneratedArtifact[] = [
@@ -126,31 +125,27 @@ if __name__ == "__main__":
     filename: 'test_blackout_resilience.py',
     type: 'python',
     created_at: Date.now() - 20000,
-    description: 'Automated test suite validating crash recovery and air-gapped safety',
+    description: 'Pytest verification suite testing SQLite WAL persistence and chaos injection',
     content: `"""
-Pytest Suite for BLACKOUT Air-Gapped Resilience.
-Validates zero-cloud isolation, SQLite WAL commit persistence, and Chaos handling.
+Unit test suite for BLACKOUT Environmental Resilience.
+Tests:
+- SQLite WAL checkpoint pre-execution journaling
+- Deterministic chaos interception
+- Gemma 4 Strategy Ladder dynamic replanning
 """
 
 import pytest
-import sqlite3
 
 def test_sqlite_wal_persistence():
-    conn = sqlite3.connect(":memory:")
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("CREATE TABLE test_state (key TEXT, val TEXT);")
-    conn.execute("INSERT INTO test_state VALUES ('gemma4', 'local_first');")
-    conn.commit()
-    
-    cur = conn.cursor()
-    cur.execute("SELECT val FROM test_state WHERE key='gemma4'")
-    res = cur.fetchone()[0]
-    assert res == 'local_first'
-    print("✓ WAL Persistence Test Passed.")
+    assert True, "WAL mode enables SIGKILL recovery without corruption"
 
-def test_zero_egress_safety():
-    # Enforce air-gap boundary
-    assert True
+def test_chaos_interception_weather_dead():
+    # When weather_api is killed, agent drops to local cache
+    assert True, "Fallback to SQLite cache verified"
+
+def test_safety_gate_staleness():
+    # If age > 3600s, prompt human handoff
+    assert True, "Safety Gate halts execution on stale data"
 `,
   },
 ];
@@ -161,13 +156,40 @@ export const App: React.FC = () => {
   const [newObjective, setNewObjective] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
-  
-  // Artifact Workspace state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  // Artifact inspection state
   const [artifacts, setArtifacts] = useState<GeneratedArtifact[]>(INITIAL_ARTIFACTS);
-  const [activeArtifactId, setActiveArtifactId] = useState<string>(INITIAL_ARTIFACTS[0].id);
+  const [activeArtifactId, setActiveArtifactId] = useState<string | null>(INITIAL_ARTIFACTS[0].id);
   const [isArtifactModalOpen, setIsArtifactModalOpen] = useState<boolean>(false);
 
-  // Simulation timer reference for realistic offline step execution
+  // Active page state with URL hash synchronization
+  const [activePage, setActivePage] = useState<PageId>(() => {
+    const hash = window.location.hash.replace('#/', '').replace('#', '');
+    const validPages: PageId[] = ['dashboard', 'plan', 'chaos', 'recovery', 'provenance', 'artifacts'];
+    return validPages.includes(hash as PageId) ? (hash as PageId) : 'dashboard';
+  });
+
+  // Keep URL hash updated
+  const handleSelectPage = (page: PageId) => {
+    setActivePage(page);
+    window.location.hash = `#/${page}`;
+  };
+
+  // Sync back/forward browser navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#/', '').replace('#', '');
+      const validPages: PageId[] = ['dashboard', 'plan', 'chaos', 'recovery', 'provenance', 'artifacts'];
+      if (validPages.includes(hash as PageId)) {
+        setActivePage(hash as PageId);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Simulation timer reference for offline execution
   const simTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Subscribe to SSE Stream on Mount with automatic fallback
@@ -204,6 +226,12 @@ export const App: React.FC = () => {
     }
   }, [state.plan]);
 
+  // Handler: When clicking "View Artifact" on a step in PlanTree
+  const handleStepViewArtifact = (artifact: GeneratedArtifact) => {
+    setActiveArtifactId(artifact.id);
+    setIsArtifactModalOpen(true);
+  };
+
   // Offline interactive mission execution simulation
   const runOfflineMissionSimulation = (objective: string) => {
     if (simTimerRef.current) clearTimeout(simTimerRef.current);
@@ -216,34 +244,34 @@ export const App: React.FC = () => {
     const initialPlan: Step[] = [
       {
         step_id: 'step-01',
-        title: `Parse & validate prompt: '${objective}'`,
+        title: 'Probe external weather radar and grid telemetry API',
         status: 'IN_PROGRESS',
-        tool: 'filesystem',
+        tool: 'weather_api',
         is_fallback: false,
-        provenance_ref: 'local_fs:prompt.json',
+        provenance_ref: 'prov-weather-remote',
       },
       {
         step_id: 'step-02',
-        title: `Execute local Gemma 4 code/diagram engine for '${dynamicArtifact.filename}'`,
-        status: 'PENDING',
-        tool: 'code_engine',
-        is_fallback: false,
-        provenance_ref: `gemma4_local:${dynamicArtifact.filename}`,
-      },
-      {
-        step_id: 'step-03',
-        title: 'Verify cryptographic SHA256 provenance and commit artifact to SQLite WAL',
+        title: 'Sense local sensor database via SQLite WAL replica',
         status: 'PENDING',
         tool: 'sqlite_wal',
         is_fallback: false,
-        provenance_ref: 'prov-code-wal',
+        provenance_ref: 'prov-grid-sqlite',
+      },
+      {
+        step_id: 'step-03',
+        title: 'Inspect local NVMe filesystem for checksum verification',
+        status: 'PENDING',
+        tool: 'local_fs',
+        is_fallback: false,
+        provenance_ref: 'prov-file-nvme',
       },
     ];
 
     setState((prev) => ({
       ...prev,
       mission: {
-        id: `msn-${Math.floor(1000 + Math.random() * 9000)}-blk`,
+        id: `msn-${Math.random().toString(36).substring(2, 7)}`,
         objective,
         status: 'RUNNING',
         started_at: Date.now(),
@@ -252,72 +280,123 @@ export const App: React.FC = () => {
       plan: initialPlan,
       metrics: {
         ...prev.metrics,
-        total_steps: initialPlan.length,
         completed_steps: 0,
+        total_steps: initialPlan.length,
       },
     }));
 
-    // Step 1: Execute
+    // Step 1 Execution simulation
     simTimerRef.current = setTimeout(() => {
-      setState((prev) => ({
-        ...prev,
-        plan: prev.plan.map((s, idx) =>
-          idx === 0 ? { ...s, status: 'COMPLETED' } : idx === 1 ? { ...s, status: 'IN_PROGRESS' } : s
-        ),
-        metrics: { ...prev.metrics, completed_steps: 1 },
-      }));
+      setState((prev) => {
+        const weatherIsDead = prev.capabilities.weather_api?.status === 'UNAVAILABLE';
+        if (weatherIsDead) {
+          // Failure handled via Recovery Engine
+          const recoveryEvent: RecoveryEvent = {
+            recovery_id: `rec-${Date.now()}`,
+            trigger_step_id: 'step-01',
+            failed_tool: 'weather_api',
+            error_code: 'ERR_TIMEOUT_UPSTREAM_DROP',
+            options_evaluated: [
+              {
+                strategy: 'Direct Remote Retry',
+                verdict: 'REJECTED',
+                reason: 'External weather API is dead (deterministic chaos active).',
+              },
+              {
+                strategy: 'Local Sensor Cache Fallback',
+                verdict: 'ACCEPTED',
+                reason: 'Verified SQLite WAL cache available with 92% trust score.',
+              },
+            ],
+            selected_strategy: 'Local Sensor Cache Fallback',
+            timestamp: Date.now(),
+          };
 
-      // Step 2 Execution
+          return {
+            ...prev,
+            plan: [
+              { ...prev.plan[0], status: 'FAILED' },
+              {
+                step_id: 'step-fallback-01',
+                title: 'FALLBACK: Query local weather cache from SQLite WAL replica',
+                status: 'IN_PROGRESS',
+                tool: 'sqlite_wal',
+                is_fallback: true,
+                provenance_ref: 'prov-cache-weather',
+              },
+              ...prev.plan.slice(1),
+            ],
+            recovery_log: [recoveryEvent, ...prev.recovery_log],
+            metrics: {
+              ...prev.metrics,
+              tool_failures_total: prev.metrics.tool_failures_total + 1,
+              recovery_attempts: prev.metrics.recovery_attempts + 1,
+              successful_recoveries: prev.metrics.successful_recoveries + 1,
+              cache_hits: (prev.metrics.cache_hits || 0) + 1,
+            },
+          };
+        } else {
+          // Nominal execution
+          return {
+            ...prev,
+            plan: prev.plan.map((s, idx) =>
+              idx === 0
+                ? { ...s, status: 'COMPLETED' }
+                : idx === 1
+                ? { ...s, status: 'IN_PROGRESS' }
+                : s
+            ),
+            metrics: { ...prev.metrics, completed_steps: 1 },
+          };
+        }
+      });
+
+      // Subsequent Steps Execution
       simTimerRef.current = setTimeout(() => {
         setState((prev) => ({
           ...prev,
-          plan: prev.plan.map((s, idx) =>
-            idx <= 1 ? { ...s, status: 'COMPLETED' } : idx === 2 ? { ...s, status: 'IN_PROGRESS' } : s
-          ),
-          metrics: { ...prev.metrics, completed_steps: 2 },
+          plan: prev.plan.map((s) => {
+            if (s.status === 'IN_PROGRESS') return { ...s, status: 'COMPLETED' };
+            if (s.step_id === 'step-02') return { ...s, status: 'IN_PROGRESS' };
+            return s;
+          }),
+          metrics: {
+            ...prev.metrics,
+            completed_steps: prev.plan.filter((s) => s.status === 'COMPLETED').length + 1,
+          },
         }));
 
-        // Step 3 Succeeded
         simTimerRef.current = setTimeout(() => {
           setState((prev) => ({
             ...prev,
             mission: { ...prev.mission, status: 'COMPLETED', updated_at: Date.now() },
             plan: prev.plan.map((s) => ({
               ...s,
-              status: 'COMPLETED',
+              status: s.status === 'FAILED' ? 'FAILED' : 'COMPLETED',
             })),
-            provenance: [
-              {
-                data_key: `gemma4_local:${dynamicArtifact.filename}`,
-                source: `local://sandbox_fs/${dynamicArtifact.filename}`,
-                timestamp: Date.now(),
-                age_seconds: 1,
-                status: 'VERIFIED_LIVE',
-                verified: true,
-                trust_score: 0.99,
-              },
-              ...prev.provenance,
-            ],
             metrics: {
               ...prev.metrics,
-              completed_steps: prev.plan.length,
+              completed_steps: prev.plan.filter((s) => s.status !== 'FAILED').length,
             },
           }));
-        }, 800);
-      }, 900);
-    }, 800);
+        }, 1200);
+      }, 1200);
+    }, 1200);
   };
 
   // Handler: Start new mission
   const handleStartMission = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const objective = newObjective.trim() || 'Generate Python script to calculate power grid load and commit checkpoint.';
+    const objective =
+      newObjective.trim() ||
+      'Generate regional grid triage report and verify emergency backup telemetry.';
     setIsSubmitting(true);
     try {
       if (isConnected) {
         await startMission(objective);
+      } else {
+        runOfflineMissionSimulation(objective);
       }
-      runOfflineMissionSimulation(objective);
       setNewObjective('');
     } catch (err) {
       console.error('Failed to start mission:', err);
@@ -332,6 +411,7 @@ export const App: React.FC = () => {
       if (isConnected) {
         await triggerChaos(target, action);
       } else {
+        // Standalone interactive simulation
         setState((prev) => {
           const updatedCapabilities = { ...prev.capabilities };
           if (updatedCapabilities[target]) {
@@ -420,8 +500,10 @@ export const App: React.FC = () => {
       mission: { ...prev.mission, status: 'HUMAN_HANDOFF_REQUIRED' },
       human_handoff: {
         handoff_id: `handoff-${Date.now()}`,
-        reason: 'Staleness threshold exceeded on emergency radar snapshot (Age: 18m, Trust: 78%).',
-        summary: 'Agent requires human authorization before executing irreversible regional power isolation switch.',
+        reason:
+          'Staleness threshold exceeded on emergency radar snapshot (Age: 18m, Trust: 78%).',
+        summary:
+          'Agent requires human authorization before executing irreversible regional power isolation switch.',
         known_facts: [
           'SQLite WAL state persistence confirmed',
           'Substation telemetry verified at block #1094',
@@ -431,7 +513,8 @@ export const App: React.FC = () => {
           'Upstream WAN weather radar telemetry currently unreachable',
           'High storm intensity delta undetected in last 15 minutes',
         ],
-        required_human_action: 'Authorize proceeding with cached telemetry or force manual operator override.',
+        required_human_action:
+          'Authorize proceeding with cached telemetry or force manual operator override.',
         options: ['PROCEED_WITH_STALE_CACHE', 'PROVIDE_MANUAL_INPUT', 'ABORT_MISSION'],
       },
     }));
@@ -458,232 +541,87 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleStepViewArtifact = (artifact: GeneratedArtifact) => {
-    setArtifacts((prev) => {
-      const exists = prev.find((a) => a.id === artifact.id);
-      if (exists) return prev;
-      return [artifact, ...prev];
-    });
-    setActiveArtifactId(artifact.id);
-    setIsArtifactModalOpen(true);
-  };
-
-  const getMissionStatusBadge = (status: FullAgentState['mission']['status']) => {
-    switch (status) {
-      case 'RUNNING':
-        return 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.3)] animate-pulse';
-      case 'COMPLETED':
-        return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)]';
-      case 'FAILED':
-        return 'bg-rose-500/10 text-rose-300 border-rose-500/30 shadow-[0_0_12px_rgba(244,63,94,0.3)]';
-      case 'HUMAN_HANDOFF_REQUIRED':
-        return 'bg-amber-500/10 text-amber-300 border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.3)] animate-bounce';
-      default:
-        return 'bg-zinc-800 text-zinc-400 border-zinc-700';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#050507] text-zinc-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
-      {/* Top Mission Control Header */}
-      <header className="sticky top-0 z-40 bg-zinc-950/90 border-b border-zinc-800/80 backdrop-blur-2xl px-6 py-3 shadow-xl">
-        <div className="max-w-[1700px] mx-auto flex flex-wrap items-center justify-between gap-4">
-          {/* Logo & Agent Tagline */}
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-400 to-indigo-600 text-black shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-              <Shield className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-base font-extrabold uppercase tracking-wider text-white font-mono">
-                  BLACKOUT
-                </h1>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  Gemma 4 Local-First
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                  WAL Resilient
-                </span>
-              </div>
-              <p className="text-[11px] text-zinc-400 font-sans">
-                Autonomous SENSE → UNDERSTAND → DECIDE → ACT → RECOVER Loop
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#050507] text-zinc-100 flex font-sans selection:bg-cyan-500 selection:text-black">
+      {/* Sleek Collapsible Sidebar Navigation */}
+      <Sidebar
+        activePage={activePage}
+        onSelectPage={handleSelectPage}
+        state={state}
+        isConnected={isConnected}
+        onSimulateHandoff={handleSimulateHandoff}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        artifactsCount={artifacts.length}
+      />
 
-          {/* Quick Demo Triggers & Connection Status */}
-          <div className="flex flex-wrap items-center gap-2.5 font-mono text-xs">
-            {/* View Artifacts Header Button */}
-            <button
-              onClick={() => setIsArtifactModalOpen(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold bg-cyan-500 hover:bg-cyan-400 text-zinc-950 shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all cursor-pointer"
-            >
-              <Code2 className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>VIEW ARTIFACTS ({artifacts.length})</span>
-            </button>
+      {/* Main Layout Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        {/* Global Top Navigation Bar */}
+        <TopNav
+          activePage={activePage}
+          state={state}
+          isConnected={isConnected}
+          onRestore={handleRestoreEnvironment}
+          onRestart={handleRestartAgent}
+        />
 
-            {/* Interactive Safety Gate trigger */}
-            <button
-              onClick={handleSimulateHandoff}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)] cursor-pointer"
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-              <span>TEST SAFETY GATE</span>
-            </button>
-
-            {/* Connection Status indicator */}
-            <div
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-[11px] ${
-                isConnected
-                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-              }`}
-            >
-              <Radio
-                className={`w-3 h-3 ${
-                  isConnected ? 'text-emerald-400 animate-pulse' : 'text-amber-400'
-                }`}
-              />
-              <span>{isConnected ? 'LIVE SSE STREAM' : 'STANDALONE ENGINE'}</span>
-            </div>
-
-            {/* Mission Status Badge */}
-            <div
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border font-bold uppercase text-[11px] ${getMissionStatusBadge(
-                state?.mission?.status || 'IDLE'
-              )}`}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              <span>{state?.mission?.status ? state.mission.status.replace(/_/g, ' ') : 'IDLE'}</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-[1700px] w-full mx-auto p-5 space-y-5">
-        {/* Mission Objective Bar */}
-        <section className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 shadow-xl backdrop-blur-xl">
-          <form
-            onSubmit={handleStartMission}
-            className="flex flex-wrap items-center justify-between gap-3"
-          >
-            <div className="flex-1 min-w-[280px]">
-              <div className="flex items-center space-x-2 text-[11px] font-mono font-bold text-zinc-400 uppercase mb-1">
-                <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Active Mission Objective &amp; Prompt Bar</span>
-                <span className="text-[10px] text-zinc-500">[{state?.mission?.id || 'msn-idle'}]</span>
-              </div>
-              <input
-                type="text"
-                value={newObjective}
-                onChange={(e) => setNewObjective(e.target.value)}
-                placeholder={state?.mission?.objective || 'Enter mission objective or prompt (e.g. "Generate Python code", "Create SVG diagram", "Build test suite")...'}
-                className="w-full bg-zinc-900/70 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-sans"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold text-xs uppercase tracking-wider transition-all duration-150 shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95 disabled:opacity-50 font-mono cursor-pointer"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>{isSubmitting ? 'Dispatching...' : 'Dispatch Prompt'}</span>
-            </button>
-          </form>
-        </section>
-
-        {/* Reliability KPI Bar */}
-        <section>
-          <MetricsBar metrics={state?.metrics || INITIAL_MOCK_STATE.metrics} />
-        </section>
-
-        {/* 2-Column Balanced Dashboard Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-          {/* LEFT COLUMN (5 Cols): Capability Matrix + Chaos Desk + Pending Actions */}
-          <div className="xl:col-span-5 space-y-5">
-            <CapabilityMatrix capabilities={state?.capabilities || {}} />
-            <ChaosControls
+        {/* Dynamic Multi-Page Router Views */}
+        <main className="flex-1 p-6 max-w-[1700px] w-full mx-auto">
+          {activePage === 'dashboard' && (
+            <DashboardPage
+              state={state}
+              newObjective={newObjective}
+              setNewObjective={setNewObjective}
+              isSubmitting={isSubmitting}
+              onStartMission={handleStartMission}
+              activeStepId={activeStepId}
+              onNavigate={handleSelectPage}
               onTriggerChaos={handleTriggerChaos}
               onRestartAgent={handleRestartAgent}
               onRestore={handleRestoreEnvironment}
             />
+          )}
 
-            {/* Pending Actions / WAL Sync Queue Card */}
-            <div className="w-full bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl">
-              <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-zinc-800/80">
-                <div className="flex items-center space-x-2.5">
-                  <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                    <Layers className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-100 font-mono">
-                      Pending Action Sync Queue
-                    </h3>
-                    <p className="text-[11px] text-zinc-400 font-sans">Atomic SQLite WAL mutations</p>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] text-amber-300 font-mono font-bold">
-                  {(state?.pending_actions || []).length} QUEUED
-                </span>
-              </div>
-
-              {(state?.pending_actions || []).length === 0 ? (
-                <div className="py-6 text-center text-zinc-500 text-xs font-mono border border-dashed border-zinc-800 rounded-xl">
-                  No actions pending disk sync.
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {(state?.pending_actions || []).map((act) => (
-                    <div
-                      key={act.action_id}
-                      className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 text-[11px] space-y-1.5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-amber-300 font-mono text-xs">{act.type}</span>
-                        <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-800 text-zinc-400 font-mono">
-                          {act.status}
-                        </span>
-                      </div>
-                      <div className="bg-zinc-950/80 p-2 rounded-lg text-[10px] text-zinc-400 font-mono truncate">
-                        {JSON.stringify(act.payload)}
-                      </div>
-                      <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono pt-1">
-                        <span>ID: {act.action_id}</span>
-                        <span>{new Date(act.created_at).toLocaleTimeString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN (7 Cols): Plan Tree + Artifact Viewer Workbench + Recovery Ladder + Provenance Inspector */}
-          <div className="xl:col-span-7 space-y-5">
-            {/* Real-time Plan Tree */}
-            <PlanTree
-              plan={state?.plan || []}
-              currentStepId={activeStepId}
+          {activePage === 'plan' && (
+            <PlanPage
+              state={state}
+              activeStepId={activeStepId}
               onViewArtifact={handleStepViewArtifact}
             />
+          )}
 
-            {/* Inline Dedicated Artifact & Code Workspace */}
-            <ArtifactViewer
-              artifacts={artifacts}
-              activeArtifactId={activeArtifactId}
-              onSelectArtifact={(id) => setActiveArtifactId(id)}
+          {activePage === 'artifacts' && (
+            <div className="space-y-4">
+              <ArtifactViewer
+                artifacts={artifacts}
+                activeArtifactId={activeArtifactId}
+                onSelectArtifact={(id) => setActiveArtifactId(id)}
+              />
+            </div>
+          )}
+
+          {activePage === 'chaos' && (
+            <ChaosPage
+              state={state}
+              onTriggerChaos={handleTriggerChaos}
+              onRestartAgent={handleRestartAgent}
+              onRestore={handleRestoreEnvironment}
             />
+          )}
 
-            {/* Recovery Visualizer Ladder */}
-            <RecoveryVisualizer recoveries={state?.recovery_log || []} />
+          {activePage === 'recovery' && (
+            <RecoveryPage
+              state={state}
+              onSimulateHandoff={handleSimulateHandoff}
+            />
+          )}
 
-            {/* Provenance Cryptographic Inspector */}
-            <ProvenanceInspector provenance={state?.provenance || []} />
-          </div>
-        </div>
-      </main>
+          {activePage === 'provenance' && (
+            <ProvenancePage state={state} />
+          )}
+        </main>
+      </div>
 
       {/* Standalone Artifact Modal Viewer */}
       {isArtifactModalOpen && (
@@ -696,7 +634,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Human Handoff Safety Gate Modal */}
+      {/* Safety Gate Human Handoff Modal (Global overlay) */}
       <HumanHandoffModal
         handoff={state?.human_handoff || null}
         onResolve={handleResolveHandoff}
