@@ -121,6 +121,17 @@ function getStatusBadge(status: CapabilityStatus) {
   }
 }
 
+function safeFormatDetails(details: any): string {
+  if (!details) return 'Operational parameters nominal.';
+  if (typeof details === 'string') return details;
+  if (typeof details === 'object') {
+    return Object.entries(details)
+      .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+      .join(', ');
+  }
+  return String(details);
+}
+
 export const CapabilityMatrix: React.FC<CapabilityMatrixProps> = ({ capabilities = {} }) => {
   const safeCaps = capabilities || {};
 
@@ -163,6 +174,7 @@ export const CapabilityMatrix: React.FC<CapabilityMatrixProps> = ({ capabilities
           const cap = resolveCapability(def);
           const style = getStatusBadge(cap.status);
           const Icon = def.icon;
+          const detailsString = safeFormatDetails(cap.details);
 
           return (
             <div
@@ -194,7 +206,7 @@ export const CapabilityMatrix: React.FC<CapabilityMatrixProps> = ({ capabilities
                 </div>
 
                 <p className="text-[11px] leading-snug text-zinc-400 line-clamp-2 mt-1 font-sans">
-                  {cap.details || 'Operational parameters nominal.'}
+                  {detailsString}
                 </p>
               </div>
 

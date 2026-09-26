@@ -10,6 +10,24 @@ import { FullAgentState, CapabilityStatus, Step, Capability, Metrics } from '../
 const API_BASE = (import.meta as { env?: Record<string, string> }).env?.VITE_API_BASE_URL || '';
 
 /**
+ * Safely stringifies any value for rendering in React child elements.
+ */
+function formatDetailsText(details: any, errorMessage?: any): string {
+  if (typeof details === 'string' && details.trim().length > 0) {
+    return details;
+  }
+  if (errorMessage && typeof errorMessage === 'string') {
+    return errorMessage;
+  }
+  if (typeof details === 'object' && details !== null) {
+    return Object.entries(details)
+      .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+      .join(', ');
+  }
+  return 'Operational parameters nominal.';
+}
+
+/**
  * Normalizes backend state payload (from FastAPI) into the FullAgentState interface.
  */
 export function normalizeBackendState(raw: any): FullAgentState {
@@ -20,10 +38,12 @@ export function normalizeBackendState(raw: any): FullAgentState {
   const capabilities: Record<string, Capability> = {};
   for (const [key, val] of Object.entries(rawCaps) as [string, any][]) {
     const status: CapabilityStatus = (val.status || val.state || 'AVAILABLE').toUpperCase();
+    const details = formatDetailsText(val.details, val.error_message);
+
     capabilities[key] = {
       status,
       latency_ms: typeof val.latency_ms === 'number' ? Math.round(val.latency_ms) : 0,
-      details: val.details || val.error_message || 'Operational parameters nominal.',
+      details,
     };
   }
 
@@ -37,14 +57,14 @@ export function normalizeBackendState(raw: any): FullAgentState {
     else if (rawStatus === 'FAILED') status = 'FAILED';
 
     return {
-      step_id: s.step_id || s.id || `step-${idx + 1}`,
-      title: s.title || s.description || `Step #${idx + 1}`,
+      step_id: String(s.step_id || s.id || `step-${idx + 1}`),
+      title: String(s.title || s.description || `Step #${idx + 1}`),
       status,
-      tool: s.tool || 'system',
+      tool: String(s.tool || 'system'),
       is_fallback: Boolean(s.is_fallback || s.tool === 'local_cache'),
-      provenance_ref: s.provenance_ref || (s.provenance?.source ? s.provenance.source : null),
+      provenance_ref: s.provenance_ref ? String(s.provenance_ref) : s.provenance?.source ? String(s.provenance.source) : null,
       execution_time_ms: s.execution_time_ms,
-      error: s.error,
+      error: s.error ? String(s.error) : null,
       provenance: s.provenance,
     };
   });
@@ -61,8 +81,8 @@ export function normalizeBackendState(raw: any): FullAgentState {
   }
 
   const mission = {
-    id: raw.mission?.id || 'msn-idle',
-    objective: raw.mission?.objective || 'No mission objective active.',
+    id: String(raw.mission?.id || 'msn-idle'),
+    objective: String(raw.mission?.objective || 'No mission objective active.'),
     status: missionStatus,
     started_at: raw.mission?.created_at ? new Date(raw.mission.created_at).getTime() : Date.now(),
     updated_at: raw.mission?.updated_at ? new Date(raw.mission.updated_at).getTime() : Date.now(),
@@ -94,20 +114,20 @@ export function normalizeBackendState(raw: any): FullAgentState {
   if (!human_handoff && raw.pending_human_request) {
     const req = raw.pending_human_request;
     human_handoff = {
-      handoff_id: req.step_id || req.mission_id || 'handoff-req-01',
-      reason: req.reason || 'Data staleness or low trust detected.',
-      summary: req.action_needed || 'Autonomous threshold reached.',
-      known_facts: req.known_facts || ['Local SQLite WAL persistence operational', 'Telemetry cache valid'],
-      unknown_facts: req.unknown_facts || ['WAN gateway connectivity down', 'Upstream sensor verification'],
+      handoff_id: String(req.step_id || req.mission_id || 'handoff-req-01'),
+      reason: String(req.reason || 'Data staleness or low trust detected.'),
+      summary: String(req.action_needed || 'Autonomous threshold reached.'),
+      known_facts: Array.isArray(req.known_facts) ? req.known_facts.map(String) : ['Local SQLite WAL persistence operational', 'Telemetry cache valid'],
+      unknown_facts: Array.isArray(req.unknown_facts) ? req.unknown_facts.map(String) : ['WAN gateway connectivity down', 'Upstream sensor verification'],
       required_human_action: 'Select mitigation strategy to authorize execution.',
-      options: req.options || ['PROCEED_WITH_STALE_CACHE', 'FORCE_FALLBACK_REPLAN', 'ABORT_MISSION'],
+      options: Array.isArray(req.options) ? req.options.map(String) : ['PROCEED_WITH_STALE_CACHE', 'FORCE_FALLBACK_REPLAN', 'ABORT_MISSION'],
     };
   }
 
   // Normalize provenance records
-  const provenance = raw.provenance || [];
-  const recovery_log = raw.recovery_log || [];
-  const pending_actions = raw.pending_actions || [];
+  const provenance = Array.isArray(raw.provenance) ? raw.provenance : [];
+  const recovery_log = Array.isArray(raw.recovery_log) ? raw.recovery_log : [];
+  const pending_actions = Array.isArray(raw.pending_actions) ? raw.pending_actions : [];
 
   return {
     mission,
@@ -135,7 +155,6 @@ export async function startMission(objective: string): Promise<void> {
   });
 
   if (!response.ok) {
-    // Fallback to /agent/mission alias if needed
     const fallbackRes = await fetch(`${API_BASE}/agent/mission`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
