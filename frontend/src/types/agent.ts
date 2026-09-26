@@ -1,7 +1,7 @@
 /**
  * @file agent.ts
  * @description Core TypeScript type definitions for the BLACKOUT autonomous agent.
- * Defines the shared schema contract across SENSE, UNDERSTAND, DECIDE, ACT, CHECK,
+ * Defines shared schema contracts across SENSE, UNDERSTAND, DECIDE, ACT, CHECK,
  * RECOVER, and REPLAN stages of the execution loop.
  */
 
@@ -9,23 +9,36 @@ export type CapabilityStatus = 'AVAILABLE' | 'DEGRADED' | 'STALE' | 'UNAVAILABLE
 
 export interface Capability {
   status: CapabilityStatus;
+  state?: CapabilityStatus;
   latency_ms: number;
   details: string;
+  error_message?: string;
+  tool_name?: string;
 }
 
 export interface Step {
   step_id: string;
+  id?: string;
   title: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+  description?: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'pending' | 'running' | 'completed' | 'failed';
   tool: string;
   is_fallback: boolean;
   provenance_ref: string | null;
+  error?: string | null;
+  execution_time_ms?: number | null;
+  provenance?: {
+    source: string;
+    trust_score: number;
+    age_seconds: number;
+    is_synthetic?: boolean;
+  } | null;
 }
 
 export interface Mission {
   id: string;
   objective: string;
-  status: 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'HUMAN_HANDOFF_REQUIRED';
+  status: 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'HUMAN_HANDOFF_REQUIRED' | 'idle' | 'running' | 'completed' | 'failed' | 'waiting_human';
   started_at: number;
   updated_at: number;
 }
@@ -76,6 +89,11 @@ export interface Metrics {
   cloud_requests: number;
   local_processing_pct: number;
   state_preservation_ok: boolean;
+  steps_executed?: number;
+  replans_count?: number;
+  tool_failures?: number;
+  cache_hits?: number;
+  current_loop_phase?: string;
 }
 
 export interface HumanHandoff {
@@ -86,6 +104,8 @@ export interface HumanHandoff {
   unknown_facts: string[];
   required_human_action: string;
   options: string[];
+  mission_id?: string;
+  step_id?: string;
 }
 
 export interface FullAgentState {
@@ -98,4 +118,6 @@ export interface FullAgentState {
   metrics: Metrics;
   human_handoff: HumanHandoff | null;
   last_updated: number;
+  active_chaos?: Array<{ id: string; target: string; action: string; intensity: number }>;
+  pending_human_request?: Record<string, unknown> | null;
 }
