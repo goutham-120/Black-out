@@ -1,25 +1,44 @@
+# Python & Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+.env
+
+# Pytest & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# SQLite Databases & WAL
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+blackout.db*
+
+# Local Sandbox Filesystem
+backend/sandbox_fs/
+
+# Local Dev Wrappers
+powershell.cmd
+powershell.bat
+
 # Node & Frontend
 node_modules/
 dist/
 dist-ssr/
 *.local
 
-# Python & Backend
-__pycache__/
-*.py[cod]
-*$py.class
-*.sqlite
-*.sqlite3
-*.db
-*.db-wal
-*.db-shm
-.env
-.venv
-env/
-venv/
-
-# Logs & IDE
+# Logs, IDE & OS
 *.log
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db
