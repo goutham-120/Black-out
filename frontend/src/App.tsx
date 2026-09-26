@@ -447,7 +447,7 @@ export const App: React.FC = () => {
             {/* Interactive Safety Gate trigger */}
             <button
               onClick={handleSimulateHandoff}
-              className="flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+              className="flex items-center space-x-1.5 px-3 py-1 rounded-lg border text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)] cursor-pointer"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
               <span>TEST SAFETY GATE</span>
@@ -472,11 +472,11 @@ export const App: React.FC = () => {
             {/* Mission Status Badge */}
             <div
               className={`flex items-center space-x-1.5 px-3 py-1 rounded-lg border font-bold uppercase text-[11px] ${getMissionStatusBadge(
-                state.mission.status
+                state?.mission?.status || 'IDLE'
               )}`}
             >
               <Activity className="w-3.5 h-3.5" />
-              <span>{state.mission.status.replace(/_/g, ' ')}</span>
+              <span>{state?.mission?.status ? state.mission.status.replace(/_/g, ' ') : 'IDLE'}</span>
             </div>
           </div>
         </div>
@@ -494,13 +494,13 @@ export const App: React.FC = () => {
               <div className="flex items-center space-x-2 text-[11px] font-mono font-bold text-zinc-400 uppercase mb-1">
                 <Terminal className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Active Mission Objective</span>
-                <span className="text-[10px] text-zinc-500">[{state.mission.id}]</span>
+                <span className="text-[10px] text-zinc-500">[{state?.mission?.id || 'msn-idle'}]</span>
               </div>
               <input
                 type="text"
                 value={newObjective}
                 onChange={(e) => setNewObjective(e.target.value)}
-                placeholder={state.mission.objective || 'Enter mission objective...'}
+                placeholder={state?.mission?.objective || 'Enter mission objective...'}
                 className="w-full bg-zinc-900/70 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-sans"
               />
             </div>
@@ -508,7 +508,7 @@ export const App: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold text-xs uppercase tracking-wider transition-all duration-150 shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95 disabled:opacity-50 font-mono"
+              className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold text-xs uppercase tracking-wider transition-all duration-150 shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95 disabled:opacity-50 font-mono cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>{isSubmitting ? 'Dispatching...' : 'Dispatch Mission'}</span>
@@ -518,14 +518,14 @@ export const App: React.FC = () => {
 
         {/* Reliability KPI Bar */}
         <section>
-          <MetricsBar metrics={state.metrics} />
+          <MetricsBar metrics={state?.metrics || INITIAL_MOCK_STATE.metrics} />
         </section>
 
         {/* 2-Column Balanced Dashboard Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
           {/* LEFT COLUMN (5 Cols): Capability Matrix + Chaos Desk + Pending Actions */}
           <div className="xl:col-span-5 space-y-5">
-            <CapabilityMatrix capabilities={state.capabilities} />
+            <CapabilityMatrix capabilities={state?.capabilities || {}} />
             <ChaosControls
               onTriggerChaos={handleTriggerChaos}
               onRestartAgent={handleRestartAgent}
@@ -547,17 +547,17 @@ export const App: React.FC = () => {
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] text-amber-300 font-mono font-bold">
-                  {state.pending_actions.length} QUEUED
+                  {(state?.pending_actions || []).length} QUEUED
                 </span>
               </div>
 
-              {state.pending_actions.length === 0 ? (
+              {(state?.pending_actions || []).length === 0 ? (
                 <div className="py-6 text-center text-zinc-500 text-xs font-mono border border-dashed border-zinc-800 rounded-xl">
                   No actions pending disk sync.
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {state.pending_actions.map((act) => (
+                  {(state?.pending_actions || []).map((act) => (
                     <div
                       key={act.action_id}
                       className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 text-[11px] space-y-1.5"
@@ -584,16 +584,16 @@ export const App: React.FC = () => {
 
           {/* RIGHT COLUMN (7 Cols): Plan Tree + Recovery Ladder + Provenance Inspector */}
           <div className="xl:col-span-7 space-y-5">
-            <PlanTree plan={state.plan} currentStepId={activeStepId} />
-            <RecoveryVisualizer recoveries={state.recovery_log} />
-            <ProvenanceInspector provenance={state.provenance} />
+            <PlanTree plan={state?.plan || []} currentStepId={activeStepId} />
+            <RecoveryVisualizer recoveries={state?.recovery_log || []} />
+            <ProvenanceInspector provenance={state?.provenance || []} />
           </div>
         </div>
       </main>
 
       {/* Human Handoff Safety Gate Modal */}
       <HumanHandoffModal
-        handoff={state.human_handoff}
+        handoff={state?.human_handoff || null}
         onResolve={handleResolveHandoff}
       />
     </div>

@@ -18,11 +18,13 @@ import {
 import { Step } from '../types/agent';
 
 interface PlanTreeProps {
-  plan: Step[];
-  currentStepId: string | null;
+  plan?: Step[];
+  currentStepId?: string | null;
 }
 
-export const PlanTree: React.FC<PlanTreeProps> = ({ plan, currentStepId }) => {
+export const PlanTree: React.FC<PlanTreeProps> = ({ plan = [], currentStepId = null }) => {
+  const safePlan = Array.isArray(plan) ? plan : [];
+
   return (
     <div className="w-full bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl">
       <div className="flex items-center justify-between pb-4 mb-4 border-b border-zinc-800/80">
@@ -42,20 +44,20 @@ export const PlanTree: React.FC<PlanTreeProps> = ({ plan, currentStepId }) => {
 
         <div className="flex items-center space-x-2 font-mono text-[10px] text-zinc-400 bg-zinc-900/80 px-2.5 py-1 rounded-md border border-zinc-800">
           <span className="text-emerald-400 font-bold">
-            {plan.filter((s) => s.status === 'COMPLETED').length}
+            {safePlan.filter((s) => s.status === 'COMPLETED').length}
           </span>
           <span>/</span>
-          <span>{plan.length} STEPS</span>
+          <span>{safePlan.length} STEPS</span>
         </div>
       </div>
 
-      {plan.length === 0 ? (
+      {safePlan.length === 0 ? (
         <div className="py-8 text-center text-zinc-500 font-mono text-xs border border-dashed border-zinc-800 rounded-xl">
           No active mission plan. Dispatch a mission to generate execution graph.
         </div>
       ) : (
         <div className="relative pl-3 space-y-3">
-          {plan.map((step, index) => {
+          {safePlan.map((step, index) => {
             const isActive = step.step_id === currentStepId || step.status === 'IN_PROGRESS';
             const isCompleted = step.status === 'COMPLETED';
             const isFailed = step.status === 'FAILED';
