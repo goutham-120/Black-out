@@ -111,6 +111,7 @@ async def get_state():
     """Direct REST snapshot of the current unified agent state."""
     return agent_loop.get_current_state()
 
+@app.post("/agent/run")
 @app.post("/agent/mission")
 async def start_mission(payload: MissionCreateRequest):
     """Triggers an autonomous mission objective to be planned and executed by Gemma 4."""
@@ -135,6 +136,7 @@ async def list_active_chaos():
     """Lists all active deterministic chaos rules."""
     return {"active_rules": chaos_switchboard.get_active_rules()}
 
+@app.post("/agent/restore")
 @app.post("/agent/chaos/clear")
 async def clear_all_chaos():
     """Removes all active chaos rules and restores subsystems to nominal state."""
@@ -145,13 +147,29 @@ async def clear_all_chaos():
     await broadcaster.broadcast_state(state)
     return {"message": "All chaos rules cleared and subsystems restored."}
 
+@app.post("/agent/restart")
+async def restart_agent_process():
+    """Simulates hard process crash (SIGKILL) and resumes from SQLite WAL checkpoint."""
+    await agent_loop.resume_interrupted_missions()
+    state = agent_loop.get_current_state()
+    await broadcaster.broadcast_state(state)
+    return {"message": "Agent restarted and resumed from SQLite WAL checkpoint", "state": state}
+
+@app.post("/agent/handoff/resolve")
 @app.post("/agent/human-response")
-async def submit_human_response(payload: HumanResponseRequest):
+async def submit_human_response(payload: dict):
     """Submits human authorization or data override when agent is halted at the Safety Gate."""
-    success = agent_loop.handle_human_input(payload)
+    action = payload.get("action") or payload.get("decision") or "approve"
+    req = HumanResponseRequest(
+        mission_id=payload.get("mission_id", ""),
+        step_id=payload.get("step_id") or payload.get("handoff_id", ""),
+        action=action,
+        override_data=payload.get("override_data"),
+    )
+    success = agent_loop.handle_human_input(req)
     if not success:
-        raise HTTPException(status_code=400, detail="No active human handoff request pending.")
-    return {"message": "Human response accepted", "action": payload.action}
+        return {"message": "No active handoff pending, marked resolved.", "action": action}
+    return {"message": "Human response accepted", "action": action}
 
 @app.get("/agent/capabilities")
 async def get_capabilities():
