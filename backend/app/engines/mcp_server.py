@@ -152,23 +152,16 @@ async def handle_tool_call(name: str, arguments: Dict[str, Any]) -> Dict[str, An
     else:
         return {"error": f"Unknown tool: {name}"}
 
-async def run_mcp_stdio_server():
+def run_mcp_stdio_server():
     """Reads JSON-RPC messages from stdin and writes responses to stdout."""
-    # Ensure stdout is UTF-8 encoded
+    # Ensure UTF-8 streams for cross-platform reliability
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
+    if hasattr(sys.stdin, 'reconfigure'):
+        sys.stdin.reconfigure(encoding='utf-8')
 
-    loop = asyncio.get_event_loop()
-    reader = asyncio.StreamReader()
-    protocol = asyncio.StreamReaderProtocol(reader)
-    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
-
-    while True:
-        line = await reader.readline()
-        if not line:
-            break
-
-        line_str = line.decode("utf-8").strip()
+    for line in sys.stdin:
+        line_str = line.strip()
         if not line_str:
             continue
 
@@ -187,7 +180,7 @@ async def run_mcp_stdio_server():
             elif method == "tools/call":
                 tool_name = params.get("name")
                 tool_args = params.get("arguments", {})
-                result = await handle_tool_call(tool_name, tool_args)
+                result = asyncio.run(handle_tool_call(tool_name, tool_args))
                 response = {
                     "jsonrpc": "2.0",
                     "id": req_id,
@@ -223,4 +216,4 @@ async def run_mcp_stdio_server():
             sys.stdout.flush()
 
 if __name__ == "__main__":
-    asyncio.run(run_mcp_stdio_server())
+    run_mcp_stdio_server()
