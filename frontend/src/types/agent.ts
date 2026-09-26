@@ -27,6 +27,8 @@ export interface Step {
   provenance_ref: string | null;
   error?: string | null;
   execution_time_ms?: number | null;
+  params?: Record<string, any>;
+  output?: any;
   provenance?: {
     source: string;
     trust_score: number;

@@ -65,6 +65,8 @@ export function normalizeBackendState(raw: any): FullAgentState {
       provenance_ref: s.provenance_ref ? String(s.provenance_ref) : s.provenance?.source ? String(s.provenance.source) : null,
       execution_time_ms: s.execution_time_ms,
       error: s.error ? String(s.error) : null,
+      params: s.params,
+      output: s.output,
       provenance: s.provenance,
     };
   });
