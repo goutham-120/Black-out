@@ -14,7 +14,6 @@ import {
   Trash2,
   ZapOff,
   RotateCcw,
-  AlertTriangle,
   Flame,
   Radio,
 } from 'lucide-react';
@@ -43,7 +42,7 @@ export const ChaosControls: React.FC<ChaosControlsProps> = ({
     setActiveAction(id);
     setRecentActions((prev) => [
       { id, label, time: Date.now() },
-      ...prev.slice(0, 3),
+      ...prev.slice(0, 2),
     ]);
 
     try {
@@ -51,77 +50,65 @@ export const ChaosControls: React.FC<ChaosControlsProps> = ({
     } finally {
       setTimeout(() => {
         setActiveAction((curr) => (curr === id ? null : curr));
-      }, 600);
+      }, 500);
     }
   };
 
   return (
-    <div className="w-full bg-zinc-950 border border-zinc-800/80 rounded-xl p-5 shadow-2xl relative overflow-hidden backdrop-blur-md">
-      {/* Accent top gradient */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-red-600 opacity-80" />
-
+    <div className="w-full bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl relative overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-zinc-800/80">
         <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-lg bg-rose-950/60 border border-rose-500/30 text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.25)]">
-            <Flame className="w-5 h-5 animate-pulse" />
+          <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.15)]">
+            <Flame className="w-4 h-4 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-100 font-mono">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-100 font-mono">
                 Chaos Switchboard
               </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-red-950/80 text-rose-400 border border-rose-500/40">
-                Fault Injection Desk
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                Fault Injection
               </span>
             </div>
-            <p className="text-xs text-zinc-400">
-              Trigger deterministic environment failures to test autonomous recovery &amp; replanning
+            <p className="text-[11px] text-zinc-400 font-sans">
+              Inject deterministic failures to evaluate autonomous replanning
             </p>
           </div>
         </div>
 
-        {/* Global Restore Action */}
         <button
-          onClick={() => handleAction('restore', 'Restored Environment', onRestore)}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase transition-all duration-200 border ${
+          onClick={() => handleAction('restore', 'Restored Subsystems', onRestore)}
+          className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg font-mono text-[11px] font-bold uppercase transition-all duration-150 border ${
             activeAction === 'restore'
-              ? 'bg-emerald-500 text-zinc-950 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.5)] scale-95'
-              : 'bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 border-emerald-500/40 hover:border-emerald-400/80 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+              ? 'bg-emerald-500 text-zinc-950 border-emerald-400 scale-95 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
           }`}
         >
-          <RotateCcw
-            className={`w-4 h-4 ${activeAction === 'restore' ? 'animate-spin' : ''}`}
-          />
-          <span>Restore All Capabilities</span>
+          <RotateCcw className={`w-3.5 h-3.5 ${activeAction === 'restore' ? 'animate-spin' : ''}`} />
+          <span>Restore All</span>
         </button>
       </div>
 
-      {/* Button Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         {/* Kill Internet */}
         <button
           onClick={() =>
-            handleAction('kill_net', 'Killed Internet Gateway', () =>
+            handleAction('kill_net', 'Killed Internet', () =>
               onTriggerChaos('internet', 'DISABLE')
             )
           }
-          className={`group flex flex-col justify-between p-3.5 rounded-lg border text-left transition-all duration-150 font-mono ${
+          className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-150 ${
             activeAction === 'kill_net'
-              ? 'bg-rose-900/90 border-rose-400 text-white scale-95 shadow-[0_0_15px_rgba(244,63,94,0.4)]'
-              : 'bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-rose-500/50 text-zinc-300'
+              ? 'bg-rose-500/20 border-rose-500 text-white scale-95'
+              : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800/80 hover:border-rose-500/40 text-zinc-200'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-1.5 rounded bg-rose-950/80 border border-rose-500/30 text-rose-400 group-hover:scale-110 transition-transform">
-              <WifiOff className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] text-zinc-500 font-mono">NET-CUT</span>
+          <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex-shrink-0">
+            <WifiOff className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-zinc-200 group-hover:text-rose-300">
-              Kill Internet
-            </div>
-            <div className="text-[10px] text-zinc-500 mt-0.5">Force WAN failure</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold font-sans truncate">Kill Internet</div>
+            <div className="text-[10px] text-zinc-500 font-mono">WAN-CUT</div>
           </div>
         </button>
 
@@ -132,23 +119,18 @@ export const ChaosControls: React.FC<ChaosControlsProps> = ({
               onTriggerChaos('weather_api', 'DISABLE')
             )
           }
-          className={`group flex flex-col justify-between p-3.5 rounded-lg border text-left transition-all duration-150 font-mono ${
+          className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-150 ${
             activeAction === 'kill_weather'
-              ? 'bg-amber-900/90 border-amber-400 text-white scale-95 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
-              : 'bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-amber-500/50 text-zinc-300'
+              ? 'bg-amber-500/20 border-amber-500 text-white scale-95'
+              : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800/80 hover:border-amber-500/40 text-zinc-200'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-1.5 rounded bg-amber-950/80 border border-amber-500/30 text-amber-400 group-hover:scale-110 transition-transform">
-              <CloudOff className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] text-zinc-500 font-mono">API-503</span>
+          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex-shrink-0">
+            <CloudOff className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-zinc-200 group-hover:text-amber-300">
-              Disable Weather
-            </div>
-            <div className="text-[10px] text-zinc-500 mt-0.5">Trigger cache fallback</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold font-sans truncate">Disable Weather</div>
+            <div className="text-[10px] text-zinc-500 font-mono">API-503</div>
           </div>
         </button>
 
@@ -159,115 +141,94 @@ export const ChaosControls: React.FC<ChaosControlsProps> = ({
               onTriggerChaos('calendar_api', 'DISABLE')
             )
           }
-          className={`group flex flex-col justify-between p-3.5 rounded-lg border text-left transition-all duration-150 font-mono ${
+          className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-150 ${
             activeAction === 'kill_cal'
-              ? 'bg-amber-900/90 border-amber-400 text-white scale-95 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
-              : 'bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-amber-500/50 text-zinc-300'
+              ? 'bg-amber-500/20 border-amber-500 text-white scale-95'
+              : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800/80 hover:border-amber-500/40 text-zinc-200'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-1.5 rounded bg-amber-950/80 border border-amber-500/30 text-amber-400 group-hover:scale-110 transition-transform">
-              <CalendarX className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] text-zinc-500 font-mono">SYNC-OFF</span>
+          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex-shrink-0">
+            <CalendarX className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-zinc-200 group-hover:text-amber-300">
-              Disable Calendar
-            </div>
-            <div className="text-[10px] text-zinc-500 mt-0.5">Use local ICS store</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold font-sans truncate">Disable Calendar</div>
+            <div className="text-[10px] text-zinc-500 font-mono">SYNC-OFF</div>
           </div>
         </button>
 
         {/* Corrupt Local File */}
         <button
           onClick={() =>
-            handleAction('corrupt_fs', 'Corrupted Local File', () =>
+            handleAction('corrupt_fs', 'Corrupted File', () =>
               onTriggerChaos('local_filesystem', 'CORRUPT')
             )
           }
-          className={`group flex flex-col justify-between p-3.5 rounded-lg border text-left transition-all duration-150 font-mono ${
+          className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-150 ${
             activeAction === 'corrupt_fs'
-              ? 'bg-orange-900/90 border-orange-400 text-white scale-95 shadow-[0_0_15px_rgba(249,115,22,0.4)]'
-              : 'bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-orange-500/50 text-zinc-300'
+              ? 'bg-orange-500/20 border-orange-500 text-white scale-95'
+              : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800/80 hover:border-orange-500/40 text-zinc-200'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-1.5 rounded bg-orange-950/80 border border-orange-500/30 text-orange-400 group-hover:scale-110 transition-transform">
-              <FileWarning className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] text-zinc-500 font-mono">IO-ERR</span>
+          <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 flex-shrink-0">
+            <FileWarning className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-zinc-200 group-hover:text-orange-300">
-              Corrupt Local File
-            </div>
-            <div className="text-[10px] text-zinc-500 mt-0.5">Test state recovery</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold font-sans truncate">Corrupt File</div>
+            <div className="text-[10px] text-zinc-500 font-mono">IO-ERR</div>
           </div>
         </button>
 
         {/* Clear Cache */}
         <button
           onClick={() =>
-            handleAction('clear_cache', 'Cleared Local Cache', () =>
+            handleAction('clear_cache', 'Cleared Cache', () =>
               onTriggerChaos('local_cache', 'CLEAR')
             )
           }
-          className={`group flex flex-col justify-between p-3.5 rounded-lg border text-left transition-all duration-150 font-mono ${
+          className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-150 ${
             activeAction === 'clear_cache'
-              ? 'bg-purple-900/90 border-purple-400 text-white scale-95 shadow-[0_0_15px_rgba(168,85,247,0.4)]'
-              : 'bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-purple-500/50 text-zinc-300'
+              ? 'bg-purple-500/20 border-purple-500 text-white scale-95'
+              : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800/80 hover:border-purple-500/40 text-zinc-200'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-1.5 rounded bg-purple-950/80 border border-purple-500/30 text-purple-400 group-hover:scale-110 transition-transform">
-              <Trash2 className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] text-zinc-500 font-mono">CACHE-0</span>
+          <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex-shrink-0">
+            <Trash2 className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-zinc-200 group-hover:text-purple-300">
-              Clear Cache
-            </div>
-            <div className="text-[10px] text-zinc-500 mt-0.5">Force hard fallback</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold font-sans truncate">Clear Cache</div>
+            <div className="text-[10px] text-zinc-500 font-mono">CACHE-0</div>
           </div>
         </button>
 
-        {/* Kill Agent Process */}
+        {/* Kill Process */}
         <button
           onClick={() =>
-            handleAction('crash_agent', 'Triggered Process SIGKILL', onRestartAgent)
+            handleAction('crash_agent', 'Triggered Crash', onRestartAgent)
           }
-          className={`group flex flex-col justify-between p-3.5 rounded-lg border text-left transition-all duration-150 font-mono ${
+          className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-150 ${
             activeAction === 'crash_agent'
-              ? 'bg-red-950 border-red-500 text-white scale-95 shadow-[0_0_20px_rgba(239,68,68,0.6)]'
-              : 'bg-zinc-900/90 hover:bg-red-950/40 border-red-500/40 hover:border-red-500 text-red-200'
+              ? 'bg-rose-500/30 border-rose-500 text-white scale-95'
+              : 'bg-rose-950/20 hover:bg-rose-950/40 border-rose-500/30 hover:border-rose-500/60 text-rose-200'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="p-1.5 rounded bg-red-950 border border-red-500/60 text-red-400 group-hover:scale-110 transition-transform">
-              <ZapOff className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] text-red-400 font-mono font-bold">SIGKILL</span>
+          <div className="p-2 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-400 flex-shrink-0">
+            <ZapOff className="w-4 h-4" />
           </div>
-          <div>
-            <div className="text-xs font-bold text-red-400 group-hover:text-red-300">
-              Kill Process (Crash)
-            </div>
-            <div className="text-[10px] text-red-500/80 mt-0.5">Test WAL resume</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold font-sans truncate text-rose-300">Kill Process</div>
+            <div className="text-[10px] text-rose-400/80 font-mono">SIGKILL</div>
           </div>
         </button>
       </div>
 
-      {/* Real-time fault injection activity log */}
       {recentActions.length > 0 && (
         <div className="mt-3.5 pt-3 border-t border-zinc-800/60 flex items-center justify-between text-[11px] font-mono text-zinc-400">
-          <div className="flex items-center space-x-2">
-            <Radio className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-            <span className="text-zinc-500">Last Injected Fault:</span>
-            <span className="text-amber-300 font-semibold">{recentActions[0].label}</span>
+          <div className="flex items-center space-x-2 truncate">
+            <Radio className="w-3.5 h-3.5 text-amber-400 animate-pulse flex-shrink-0" />
+            <span className="text-zinc-500">Last Fault:</span>
+            <span className="text-amber-300 font-semibold truncate">{recentActions[0].label}</span>
           </div>
-          <span className="text-[10px] text-zinc-500">
+          <span className="text-[10px] text-zinc-500 flex-shrink-0">
             {new Date(recentActions[0].time).toLocaleTimeString()}
           </span>
         </div>

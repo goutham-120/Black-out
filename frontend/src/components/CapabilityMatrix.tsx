@@ -1,8 +1,7 @@
 /**
  * @file CapabilityMatrix.tsx
  * @description Renders the real-time capability probe status matrix for BLACKOUT.
- * Represents the SENSE phase of the autonomous loop by visualizing live health,
- * latency, and staleness across local models, caches, databases, and network adapters.
+ * Visualizes live tool health, staleness, and latency in the SENSE phase.
  */
 
 import React from 'react';
@@ -14,7 +13,6 @@ import {
   Calendar,
   CloudSun,
   Layers,
-  HelpCircle,
   Activity,
 } from 'lucide-react';
 import { Capability, CapabilityStatus } from '../types/agent';
@@ -27,7 +25,7 @@ interface CapabilityMeta {
   key: string;
   aliases: string[];
   label: string;
-  category: 'Local Core' | 'Storage & State' | 'External Network';
+  category: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
@@ -43,86 +41,81 @@ const CAPABILITY_DEFINITIONS: CapabilityMeta[] = [
     key: 'filesystem',
     aliases: ['local_fs', 'fs', 'local_filesystem'],
     label: 'Local File System',
-    category: 'Storage & State',
+    category: 'Storage',
     icon: HardDrive,
   },
   {
     key: 'local_cache',
     aliases: ['cache', 'storage_cache'],
     label: 'Local Cache Store',
-    category: 'Storage & State',
+    category: 'Storage',
     icon: Database,
   },
   {
     key: 'sqlite_wal',
     aliases: ['sync_queue', 'wal_db', 'sqlite', 'persistence'],
-    label: 'Sync Queue / WAL DB',
-    category: 'Storage & State',
+    label: 'SQLite WAL Database',
+    category: 'Persistence',
     icon: Layers,
   },
   {
     key: 'internet',
     aliases: ['network', 'wan', 'gateway'],
     label: 'Internet Gateway',
-    category: 'External Network',
+    category: 'Network',
     icon: Wifi,
   },
   {
     key: 'calendar',
     aliases: ['calendar_api', 'gcal'],
     label: 'Calendar API',
-    category: 'External Network',
+    category: 'Network',
     icon: Calendar,
   },
   {
     key: 'weather_api',
     aliases: ['weather', 'noaa_api'],
     label: 'Weather Radar API',
-    category: 'External Network',
+    category: 'Network',
     icon: CloudSun,
   },
 ];
 
-function getStatusBadgeStyle(status: CapabilityStatus): {
-  badge: string;
-  cardBorder: string;
-  glow: string;
-  dot: string;
-} {
+function getStatusBadge(status: CapabilityStatus) {
   switch (status) {
     case 'AVAILABLE':
       return {
-        badge: 'bg-emerald-950/80 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]',
-        cardBorder: 'border-emerald-500/30 hover:border-emerald-500/60',
-        glow: 'text-emerald-400',
-        dot: 'bg-emerald-400 animate-pulse',
+        badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+        card: 'border-zinc-800/80 hover:border-emerald-500/40 bg-zinc-900/60',
+        iconBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        dot: 'bg-emerald-400',
       };
     case 'DEGRADED':
       return {
-        badge: 'bg-amber-950/80 text-amber-400 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]',
-        cardBorder: 'border-amber-500/40 hover:border-amber-500/70',
-        glow: 'text-amber-400',
+        badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+        card: 'border-amber-500/30 hover:border-amber-500/50 bg-amber-950/10',
+        iconBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
         dot: 'bg-amber-400',
       };
     case 'STALE':
       return {
-        badge: 'bg-orange-950/80 text-orange-400 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.2)]',
-        cardBorder: 'border-orange-500/40 hover:border-orange-500/70',
-        glow: 'text-orange-400',
+        badge: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+        card: 'border-orange-500/30 hover:border-orange-500/50 bg-orange-950/10',
+        iconBg: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
         dot: 'bg-orange-400',
       };
     case 'UNAVAILABLE':
       return {
-        badge: 'bg-rose-950/80 text-rose-400 border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.3)] animate-pulse',
-        cardBorder: 'border-rose-500/50 hover:border-rose-500/80',
-        glow: 'text-rose-400',
-        dot: 'bg-rose-500 animate-ping',
+        badge: 'bg-rose-500/10 text-rose-400 border-rose-500/30 animate-pulse',
+        card: 'border-rose-500/30 hover:border-rose-500/50 bg-rose-950/10',
+        iconBg: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+        dot: 'bg-rose-500',
       };
     default:
       return {
-        badge: 'bg-zinc-900 text-zinc-400 border-zinc-700',
-        cardBorder: 'border-zinc-800 hover:border-zinc-700',
-        glow: 'text-zinc-400',
+        badge: 'bg-zinc-800 text-zinc-400 border-zinc-700',
+        card: 'border-zinc-800 bg-zinc-900/40',
+        iconBg: 'bg-zinc-800 text-zinc-400 border-zinc-700',
         dot: 'bg-zinc-500',
       };
   }
@@ -130,91 +123,87 @@ function getStatusBadgeStyle(status: CapabilityStatus): {
 
 export const CapabilityMatrix: React.FC<CapabilityMatrixProps> = ({ capabilities }) => {
   const resolveCapability = (def: CapabilityMeta): Capability => {
-    if (capabilities[def.key]) {
-      return capabilities[def.key];
-    }
+    if (capabilities[def.key]) return capabilities[def.key];
     for (const alias of def.aliases) {
-      if (capabilities[alias]) {
-        return capabilities[alias];
-      }
+      if (capabilities[alias]) return capabilities[alias];
     }
     return {
       status: 'UNKNOWN',
       latency_ms: 0,
-      details: 'Probe inactive or capability unmapped.',
+      details: 'Probe inactive.',
     };
   };
 
   return (
-    <div className="w-full bg-zinc-950 border border-zinc-800/80 rounded-xl p-5 shadow-2xl backdrop-blur-md">
+    <div className="w-full bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-xl">
       <div className="flex items-center justify-between pb-4 mb-4 border-b border-zinc-800/80">
         <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-lg bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-            <Activity className="w-5 h-5 animate-pulse" />
+          <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+            <Activity className="w-4 h-4 animate-pulse" />
           </div>
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-100 font-mono">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-100 font-mono">
               Live Capability Matrix
             </h3>
-            <p className="text-xs text-zinc-400">
-              Active hardware probes &amp; fallback readiness telemetry
+            <p className="text-[11px] text-zinc-400 font-sans">
+              Environmental health &amp; hardware fallback readiness
             </p>
           </div>
         </div>
-        <div className="flex items-center space-x-2 text-xs font-mono text-zinc-400">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span>SENSE LOOP: 1000ms</span>
+        <div className="flex items-center space-x-2 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 px-2.5 py-1 rounded-md border border-zinc-800">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>PROBE: 1000ms</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {CAPABILITY_DEFINITIONS.map((def) => {
           const cap = resolveCapability(def);
-          const styles = getStatusBadgeStyle(cap.status);
+          const style = getStatusBadge(cap.status);
           const Icon = def.icon;
 
           return (
             <div
               key={def.key}
-              className={`relative flex flex-col justify-between p-3.5 rounded-lg bg-zinc-900/90 border ${styles.cardBorder} transition-all duration-200 hover:scale-[1.01]`}
+              className={`flex flex-col justify-between p-3.5 rounded-xl border transition-all duration-150 ${style.card}`}
             >
               <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center space-x-2.5">
-                    <div className={`p-1.5 rounded-md bg-zinc-800/80 border border-zinc-700/50 ${styles.glow}`}>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div className={`p-1.5 rounded-lg border flex-shrink-0 ${style.iconBg}`}>
                       <Icon className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="text-xs font-semibold text-zinc-200 font-mono tracking-tight leading-tight">
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-semibold text-zinc-200 truncate font-sans">
                         {def.label}
                       </h4>
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">
+                      <span className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider block">
                         {def.category}
                       </span>
                     </div>
                   </div>
 
                   <span
-                    className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${styles.badge}`}
+                    className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase border flex-shrink-0 ${style.badge}`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
+                    <span className={`w-1 h-1 rounded-full ${style.dot}`} />
                     <span>{cap.status}</span>
                   </span>
                 </div>
 
-                <p className="text-[11px] leading-relaxed text-zinc-400 line-clamp-2 mt-1">
-                  {cap.details || 'Operational status steady.'}
+                <p className="text-[11px] leading-snug text-zinc-400 line-clamp-2 mt-1 font-sans">
+                  {cap.details || 'Operational parameters nominal.'}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-zinc-800/60 text-[10px] font-mono text-zinc-400">
+              <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-zinc-800/60 text-[10px] font-mono">
                 <span className="text-zinc-500">Latency</span>
                 <span
                   className={`font-semibold ${
-                    cap.latency_ms > 200
-                      ? 'text-amber-400'
-                      : cap.latency_ms === 0 && cap.status === 'UNAVAILABLE'
+                    cap.status === 'UNAVAILABLE'
                       ? 'text-rose-400'
+                      : cap.latency_ms > 200
+                      ? 'text-amber-400'
                       : 'text-emerald-400'
                   }`}
                 >
