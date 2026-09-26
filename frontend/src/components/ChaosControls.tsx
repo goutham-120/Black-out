@@ -200,23 +200,23 @@ export const ChaosControls: React.FC<ChaosControlsProps> = ({
           </div>
         </button>
 
-        {/* Kill Process */}
+        {/* Simulate Powercut / Hard SIGKILL Crash */}
         <button
           onClick={() =>
-            handleAction('crash_agent', 'Triggered Crash', onRestartAgent)
+            handleAction('crash_agent', 'Simulated Powercut (SIGKILL)', onRestartAgent)
           }
           className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-150 ${
             activeAction === 'crash_agent'
-              ? 'bg-rose-500/30 border-rose-500 text-white scale-95'
-              : 'bg-rose-950/20 hover:bg-rose-950/40 border-rose-500/30 hover:border-rose-500/60 text-rose-200'
+              ? 'bg-rose-500 text-black border-rose-400 scale-95 shadow-[0_0_20px_rgba(244,63,94,0.6)]'
+              : 'bg-rose-950/30 hover:bg-rose-950/50 border-rose-500/50 hover:border-rose-400 text-rose-200 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
           }`}
         >
           <div className="p-2 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-400 flex-shrink-0">
-            <ZapOff className="w-4 h-4" />
+            <ZapOff className="w-4 h-4 animate-bounce" />
           </div>
           <div className="min-w-0">
-            <div className="text-xs font-semibold font-sans truncate text-rose-300">Kill Process</div>
-            <div className="text-[10px] text-rose-400/80 font-mono">SIGKILL</div>
+            <div className="text-xs font-bold font-mono truncate text-rose-300">⚡ SIMULATE POWERCUT</div>
+            <div className="text-[10px] text-rose-400/90 font-mono">SIGKILL &amp; WAL RESUME</div>
           </div>
         </button>
       </div>
