@@ -14,8 +14,10 @@ if hasattr(sys.stdout, 'reconfigure'):
 # Add backend directory to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import pytest
 from app.engines.mcp_server import handle_tool_call, TOOLS_METADATA
 
+@pytest.mark.asyncio
 async def test_mcp_tools():
     print("\n" + "="*70)
     print("TESTING MODEL CONTEXT PROTOCOL (MCP) INTEGRATION FOR ANTIGRAVITY")
