@@ -36,6 +36,7 @@ import { PlanPage } from './pages/PlanPage';
 import { ChaosPage } from './pages/ChaosPage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { ProvenancePage } from './pages/ProvenancePage';
+import { ProcessArchitecturePage } from './pages/ProcessArchitecturePage';
 
 // Default initial artifacts for instant inspection
 const INITIAL_ARTIFACTS: GeneratedArtifact[] = [
@@ -167,7 +168,7 @@ export const App: React.FC = () => {
   // Active page state with URL hash synchronization
   const [activePage, setActivePage] = useState<PageId>(() => {
     const hash = window.location.hash.replace('#/', '').replace('#', '');
-    const validPages: PageId[] = ['dashboard', 'plan', 'chaos', 'recovery', 'provenance', 'artifacts'];
+    const validPages: PageId[] = ['dashboard', 'plan', 'chaos', 'recovery', 'provenance', 'artifacts', 'architecture'];
     return validPages.includes(hash as PageId) ? (hash as PageId) : 'dashboard';
   });
 
@@ -181,7 +182,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#/', '').replace('#', '');
-      const validPages: PageId[] = ['dashboard', 'plan', 'chaos', 'recovery', 'provenance', 'artifacts'];
+      const validPages: PageId[] = ['dashboard', 'plan', 'chaos', 'recovery', 'provenance', 'artifacts', 'architecture'];
       if (validPages.includes(hash as PageId)) {
         setActivePage(hash as PageId);
       }
@@ -673,6 +674,10 @@ export const App: React.FC = () => {
 
           {activePage === 'provenance' && (
             <ProvenancePage state={state} />
+          )}
+
+          {activePage === 'architecture' && (
+            <ProcessArchitecturePage />
           )}
         </main>
       </div>

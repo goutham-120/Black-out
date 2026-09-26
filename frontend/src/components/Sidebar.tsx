@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { FullAgentState } from '../types/agent';
 
-export type PageId = 'dashboard' | 'plan' | 'chaos' | 'recovery' | 'provenance' | 'artifacts';
+export type PageId = 'dashboard' | 'plan' | 'chaos' | 'recovery' | 'provenance' | 'artifacts' | 'architecture';
 
 interface SidebarProps {
   activePage: PageId;
@@ -115,6 +115,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: FileCheck2,
       badge: `${(state?.provenance || []).length} RECS`,
       badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    },
+    {
+      id: 'architecture' as PageId,
+      label: 'Input/Output Lifecycle',
+      subtitle: 'Process & Architecture',
+      icon: Cpu,
+      badge: '6 PHASES',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     },
   ];
 

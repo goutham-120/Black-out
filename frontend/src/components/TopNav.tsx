@@ -54,6 +54,10 @@ export const TopNav: React.FC<TopNavProps> = ({
       title: 'Artifact & Code Workbench',
       subtitle: 'Generated architecture vector SVGs, scripts, and executable test suites',
     },
+    architecture: {
+      title: 'Input/Output Lifecycle & Architecture',
+      subtitle: 'End-to-end air-gapped pipeline and live payload explorer',
+    },
   };
 
   const getMissionStatusBadge = (status: FullAgentState['mission']['status']) => {
