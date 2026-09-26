@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "blackout-resilience-sidecar": {
+      "command": "python",
+      "args": [
+        "backend/app/engines/mcp_server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "backend",
+        "LOCAL_FIRST_ISOLATION": "true"
+      },
+      "description": "Model Context Protocol interface for BLACKOUT local-first autonomous resilience and crash recovery."
+    }
+  }
+}

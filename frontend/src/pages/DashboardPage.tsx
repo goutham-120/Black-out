@@ -204,6 +204,47 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               OPEN SWITCHBOARD
             </button>
           </div>
+
+          {/* Antigravity MCP Sidecar & Plugin Integration Card */}
+          <div className="bg-zinc-950/80 border border-cyan-500/30 rounded-2xl p-5 shadow-[0_0_20px_rgba(6,182,212,0.1)] backdrop-blur-xl space-y-3 font-mono">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                  <Zap className="w-4 h-4 text-cyan-400 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold uppercase text-zinc-100">Antigravity Sidecar Plugin</h3>
+                  <p className="text-[10px] text-zinc-400 font-sans">Official Model Context Protocol (MCP) Integration</p>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 text-[9px] uppercase font-bold border border-emerald-500/40">
+                ACTIVE &amp; ARMED
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800">
+                <span className="text-zinc-500 block text-[9px]">MCP PROTOCOL</span>
+                <span className="text-cyan-300 font-bold">JSON-RPC 2.0 (stdio)</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800">
+                <span className="text-zinc-500 block text-[9px]">OFFLINE ENGINE</span>
+                <span className="text-purple-300 font-bold">Quantized Gemma 4</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800">
+                <span className="text-zinc-500 block text-[9px]">SKILL MANIFEST</span>
+                <span className="text-zinc-300 font-bold truncate block">.agents/skills/blackout</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800">
+                <span className="text-zinc-500 block text-[9px]">CRASH RECOVERY</span>
+                <span className="text-emerald-300 font-bold">SQLite WAL Block #1094</span>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/20 text-[10px] text-cyan-300/90 leading-relaxed font-sans">
+              ✓ <strong>Antigravity Failover Ready</strong>: When Antigravity loses internet/power mid-build, the BLACKOUT sidecar automatically intercepts the session, generates code via local Gemma 4, and commits checkpoints to SQLite WAL with 0% data loss.
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Execution Plan Tree Snapshot + Recovery Engine Preview */}

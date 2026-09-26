@@ -1,0 +1,31 @@
+{
+  "$schema": "https://antigravity.google.com/schemas/plugin.json",
+  "name": "blackout-resilience-plugin",
+  "version": "1.0.0",
+  "displayName": "BLACKOUT: Air-Gapped Offline Resilience & Crash Recovery",
+  "description": "Seamless offline failover sidecar for Google Antigravity. Uses local Quantized Gemma 4 and SQLite WAL atomic checkpoints to guarantee zero loss of in-flight code during powercuts or internet outages.",
+  "author": "BLACKOUT Team (Google DeepMind Gemma Hackathon)",
+  "skills": [
+    "skills/blackout-resilience/SKILL.md"
+  ],
+  "rules": [
+    "rules/blackout-rules.md"
+  ],
+  "mcpServers": {
+    "blackout-engine": {
+      "command": "python",
+      "args": [
+        "-m",
+        "app.engines.mcp_server"
+      ],
+      "env": {
+        "LOCAL_FIRST_ISOLATION": "true",
+        "SQLITE_WAL_ENABLED": "true"
+      }
+    }
+  },
+  "hooks": {
+    "on_network_disconnect": "python -m app.engines.agent_loop --offline-takeover",
+    "pre_tool_execution": "python -m app.engines.mcp_server --checkpoint-only"
+  }
+}

@@ -123,6 +123,12 @@ export const TopNav: React.FC<TopNavProps> = ({
           <span>SIMULATE SIGKILL</span>
         </button>
 
+        {/* Antigravity MCP Plugin Status Badge */}
+        <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold bg-cyan-950/60 text-cyan-300 border-cyan-500/40 shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+          <span>ANTIGRAVITY PLUGIN: ARMED</span>
+        </div>
+
         {/* Live SSE stream pulse */}
         <div
           className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] ${
