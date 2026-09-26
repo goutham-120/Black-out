@@ -87,7 +87,31 @@ class GemmaClient:
         steps = []
         obj_lower = objective.lower()
 
-        if "weather" in obj_lower or "forecast" in obj_lower or "storm" in obj_lower or "sensor" in obj_lower:
+        # 1. Code Generation, Script Writing, Image/Diagram Creation Prompts
+        if any(k in obj_lower for k in ["code", "script", "generate", "create", "write", "build", "image", "svg", "diagram", "python", "fastapi", "react", "test", "refactor", "bugfix"]):
+            # Step 1: Sense and inspect local directory/files
+            steps.append(GemmaStepOutput(
+                description="Inspect local workspace sandbox & verify runtime dependencies",
+                tool="filesystem",
+                params={"operation": "read", "path": "system_status.json"}
+            ))
+
+            # Step 2: Execute Gemma 4 Code/Artifact Synthesis
+            steps.append(GemmaStepOutput(
+                description=f"Execute local Gemma 4 code/artifact synthesis for '{objective}'",
+                tool="code_engine",
+                params={"prompt": objective, "artifact_type": "code" if "image" not in obj_lower and "svg" not in obj_lower else "svg"}
+            ))
+
+            # Step 3: Checkpoint & verify provenance
+            steps.append(GemmaStepOutput(
+                description="Verify cryptographic SHA256 provenance and commit checkpoint to SQLite WAL",
+                tool="local_cache",
+                params={"operation": "write", "cache_key": "code_provenance_record"}
+            ))
+
+        # 2. Weather and Meteorological Prompts
+        elif "weather" in obj_lower or "forecast" in obj_lower or "storm" in obj_lower:
             if weather_avail:
                 steps.append(GemmaStepOutput(
                     description="Fetch live meteorological report from external Weather API",
@@ -107,26 +131,34 @@ class GemmaClient:
                     params={"operation": "read", "path": "local_sensor_feed.json"}
                 ))
 
-        if "calendar" in obj_lower or "schedule" in obj_lower or "meeting" in obj_lower or "event" in obj_lower:
+        # 3. Calendar and Scheduling Prompts
+        elif "calendar" in obj_lower or "schedule" in obj_lower or "meeting" in obj_lower or "event" in obj_lower:
             steps.append(GemmaStepOutput(
                 description="Query local offline calendar database for urgent mission events",
                 tool="calendar",
                 params={"query": "today"}
             ))
 
-        if "file" in obj_lower or "backup" in obj_lower or "data" in obj_lower or "log" in obj_lower or not steps:
+        # 4. General Default Fallback
+        else:
             steps.append(GemmaStepOutput(
                 description="Inspect local filesystem for operational integrity and baseline configuration",
                 tool="filesystem",
                 params={"operation": "read", "path": "system_status.json"}
             ))
+            steps.append(GemmaStepOutput(
+                description=f"Synthesize autonomous execution plan for '{objective}' via Gemma 4",
+                tool="code_engine",
+                params={"prompt": objective}
+            ))
 
         # Always verify state into local cache
-        steps.append(GemmaStepOutput(
-            description="Persist current mission synthesis into SQLite local cache",
-            tool="local_cache",
-            params={"operation": "write", "cache_key": "mission_synthesis"}
-        ))
+        if not any(s.tool == "local_cache" for s in steps):
+            steps.append(GemmaStepOutput(
+                description="Persist current mission synthesis into SQLite local cache",
+                tool="local_cache",
+                params={"operation": "write", "cache_key": "mission_synthesis"}
+            ))
 
         return GemmaPlanResponse(
             reasoning=f"Formulated resilient plan for '{objective}' based on probed capability states.",
