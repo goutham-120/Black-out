@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { ZapOff } from 'lucide-react';
 import { FullAgentState, Step, RecoveryEvent } from './types/agent';
 import { INITIAL_MOCK_STATE } from './data/mock_state';
 import {
@@ -607,7 +608,18 @@ export const App: React.FC = () => {
           onRestart={handleRestartAgent}
         />
 
-<<<<<<< HEAD
+        {/* Powercut Crash / Recovery Live Notification Banner */}
+        {powercutMessage && (
+          <div className="mx-6 mt-4 p-4 rounded-2xl bg-rose-950/90 border-2 border-rose-500 shadow-[0_0_40px_rgba(244,63,94,0.4)] backdrop-blur-xl animate-fade-in font-mono flex items-center space-x-3 text-rose-200 z-30">
+            <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300 animate-pulse flex-shrink-0">
+              <ZapOff className="w-5 h-5" />
+            </div>
+            <div className="flex-1 text-xs font-bold leading-relaxed">
+              {powercutMessage}
+            </div>
+          </div>
+        )}
+
         {/* Dynamic Multi-Page Router Views */}
         <main className="flex-1 p-6 max-w-[1700px] w-full mx-auto">
           {activePage === 'dashboard' && (
@@ -619,103 +631,6 @@ export const App: React.FC = () => {
               onStartMission={handleStartMission}
               activeStepId={activeStepId}
               onNavigate={handleSelectPage}
-=======
-            {/* Interactive Safety Gate trigger */}
-            <button
-              onClick={handleSimulateHandoff}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 transition-all shadow-[0_0_10px_rgba(245,158,11,0.15)] cursor-pointer"
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-              <span>TEST SAFETY GATE</span>
-            </button>
-
-            {/* Connection Status indicator */}
-            <div
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-[11px] ${
-                isConnected
-                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-              }`}
-            >
-              <Radio
-                className={`w-3 h-3 ${
-                  isConnected ? 'text-emerald-400 animate-pulse' : 'text-amber-400'
-                }`}
-              />
-              <span>{isConnected ? 'LIVE SSE STREAM' : 'STANDALONE ENGINE'}</span>
-            </div>
-
-            {/* Mission Status Badge */}
-            <div
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border font-bold uppercase text-[11px] ${getMissionStatusBadge(
-                state?.mission?.status || 'IDLE'
-              )}`}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              <span>{state?.mission?.status ? state.mission.status.replace(/_/g, ' ') : 'IDLE'}</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-[1700px] w-full mx-auto p-5 space-y-5">
-        {/* Powercut Crash / Recovery Live Notification Banner */}
-        {powercutMessage && (
-          <div className="w-full bg-rose-950/80 border-2 border-rose-500 rounded-2xl p-4 shadow-[0_0_40px_rgba(244,63,94,0.4)] backdrop-blur-xl animate-fade-in font-mono flex items-center space-x-3 text-rose-200">
-            <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300 animate-pulse flex-shrink-0">
-              <ZapOff className="w-5 h-5" />
-            </div>
-            <div className="flex-1 text-xs font-bold leading-relaxed">
-              {powercutMessage}
-            </div>
-          </div>
-        )}
-
-        {/* Mission Objective Bar */}
-        <section className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 shadow-xl backdrop-blur-xl">
-          <form
-            onSubmit={handleStartMission}
-            className="flex flex-wrap items-center justify-between gap-3"
-          >
-            <div className="flex-1 min-w-[280px]">
-              <div className="flex items-center space-x-2 text-[11px] font-mono font-bold text-zinc-400 uppercase mb-1">
-                <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Active Mission Objective &amp; Prompt Bar</span>
-                <span className="text-[10px] text-zinc-500">[{state?.mission?.id || 'msn-idle'}]</span>
-              </div>
-              <input
-                type="text"
-                value={newObjective}
-                onChange={(e) => setNewObjective(e.target.value)}
-                placeholder={state?.mission?.objective || 'Enter mission objective or prompt (e.g. "Generate Python code", "Create SVG diagram", "Build test suite")...'}
-                className="w-full bg-zinc-900/70 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-sans"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center space-x-2 px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold text-xs uppercase tracking-wider transition-all duration-150 shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95 disabled:opacity-50 font-mono cursor-pointer"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>{isSubmitting ? 'Dispatching...' : 'Dispatch Prompt'}</span>
-            </button>
-          </form>
-        </section>
-
-        {/* Reliability KPI Bar */}
-        <section>
-          <MetricsBar metrics={state?.metrics || INITIAL_MOCK_STATE.metrics} />
-        </section>
-
-        {/* 2-Column Balanced Dashboard Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-          {/* LEFT COLUMN (5 Cols): Capability Matrix + Chaos Desk + Pending Actions */}
-          <div className="xl:col-span-5 space-y-5">
-            <CapabilityMatrix capabilities={state?.capabilities || {}} />
-            <ChaosControls
->>>>>>> 55a6e14 (Add interactive Powercut SIGKILL crash simulation and SQLite WAL zero-loss recovery demonstration)
               onTriggerChaos={handleTriggerChaos}
               onRestartAgent={handleRestartAgent}
               onRestore={handleRestoreEnvironment}
