@@ -34,7 +34,7 @@ class CapabilityEngine:
                 rule = chaos_switchboard.get_rule_for_target("internet")
 
             if rule and rule.active:
-                if rule.action == "kill":
+                if rule.action in ["kill", "disable", "unavailable"]:
                     health.state = CapabilityState.UNAVAILABLE
                     health.error_message = f"Chaos Switchboard fault injected: {rule.action.upper()}"
                 elif rule.action in ["latency", "stale"]:

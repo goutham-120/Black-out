@@ -29,12 +29,10 @@ class FilesystemTool(BaseTool):
     def _ensure_default_files(self) -> None:
         """Seeds baseline mission files for local autonomous exploration."""
         sensor_file = SANDBOX_DIR / "local_sensor_feed.json"
-        if not sensor_file.exists():
-            sensor_file.write_text('{"sensor_id": "BARO-01", "pressure_hpa": 1014.2, "status": "nominal"}')
+        sensor_file.write_text('{"sensor_id": "BARO-01", "pressure_hpa": 1014.2, "status": "nominal"}', encoding="utf-8")
 
         status_file = SANDBOX_DIR / "system_status.json"
-        if not status_file.exists():
-            status_file.write_text('{"grid_power": "active", "battery_backup_pct": 98.4, "mode": "edge_autonomous"}')
+        status_file.write_text('{"grid_power": "active", "battery_backup_pct": 98.4, "mode": "edge_autonomous"}', encoding="utf-8")
 
     async def _execute_internal(self, params: Dict[str, Any]) -> Tuple[Dict[str, Any], ProvenanceMetadata]:
         operation = params.get("operation", "read")
